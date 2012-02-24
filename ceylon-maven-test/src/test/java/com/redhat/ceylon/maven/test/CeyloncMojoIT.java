@@ -8,7 +8,13 @@ public class CeyloncMojoIT extends MojoTest {
 
     @Test
     public void helloWorld() throws MavenInvocationException {
-        mvn("src/test/resources/com/redhat/ceylon/maven/test/hello-world.xml", 
+        assertMvnSuccess("src/test/resources/com/redhat/ceylon/maven/test/hello-world.xml", 
+                "clean", "org.ceylon-lang:ceylon-maven-plugin:ceylonc");
+    }
+    
+    @Test
+    public void compileError() throws MavenInvocationException {
+        assertMvnFailure("src/test/resources/com/redhat/ceylon/maven/test/error.xml", 
                 "clean", "org.ceylon-lang:ceylon-maven-plugin:ceylonc");
     }
     

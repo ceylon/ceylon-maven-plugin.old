@@ -17,7 +17,7 @@ public abstract class MojoTest {
         super();
     }
 
-    protected void mvn(String pomFile, String... goals)
+    protected void mvn(String pomFile, int exitCode, String... goals)
             throws MavenInvocationException {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setPomFile(new File(pomFile));
@@ -33,9 +33,17 @@ public abstract class MojoTest {
         }
         InvocationResult result = invoker.execute(request);
     
-        if (result.getExitCode() != 0) {
-            Assert.fail("Maven invocation returned exit code " + result.getExitCode());
+        if (result.getExitCode() != exitCode) {
+            Assert.fail("Maven invocation returned exit code " + result.getExitCode() + ", was expecting " + exitCode);
         }
+    }
+    
+    protected void assertMvnSuccess(String pomFile, String... goals) throws MavenInvocationException {
+        mvn(pomFile, 0, goals);
+    }
+    
+    protected void assertMvnFailure(String pomFile, String... goals) throws MavenInvocationException {
+        mvn(pomFile, 1, goals);
     }
 
 }

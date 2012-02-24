@@ -21,7 +21,7 @@
         <artifactId>ceylon-maven-plugin</artifactId>
         <version>1.0-SNAPSHOT</version>
         <configuration>
-          <src>source</src>
+          <src>error</src>
           <out>../../../../../../../../target/maven-plugin-test</out>
           <verbose>false</verbose>
           <modules>
