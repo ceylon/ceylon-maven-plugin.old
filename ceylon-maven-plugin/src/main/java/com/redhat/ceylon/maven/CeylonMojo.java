@@ -20,6 +20,7 @@
 package com.redhat.ceylon.maven;
 
 import java.io.File;
+import java.util.ArrayList;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -28,7 +29,7 @@ import org.apache.maven.plugin.MojoExecutionException;
  * Executes Ceylon applications in the current VM.
  * @goal ceylon
  */
-public class CeylonMojo extends AbstractMojo {
+public class CeylonMojo extends AbstractCeylonToolMojo {
     
     /**
      * The directory containing ceylon source code. 
@@ -52,7 +53,7 @@ public class CeylonMojo extends AbstractMojo {
      * 
      * @parameter expression="${ceylon.repositories}"
      */
-    private String[] repositories;
+    private ArrayList<String> repositories;
     
     /**
      * One of:
@@ -79,7 +80,7 @@ public class CeylonMojo extends AbstractMojo {
         
         if (repositories != null) {
             for (String rep : repositories) {
-                args.addOption("-rep", rep);
+                args.addOption("-rep", resolveRepo(rep));
             }
         }
         

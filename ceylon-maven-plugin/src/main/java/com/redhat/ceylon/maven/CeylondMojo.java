@@ -21,6 +21,7 @@ package com.redhat.ceylon.maven;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -32,7 +33,7 @@ import com.redhat.ceylon.ceylondoc.Main;
  * ceylond documentation compiler.
  * @goal ceylond
  */
-public class CeylondMojo extends AbstractMojo {
+public class CeylondMojo extends AbstractCeylonToolMojo {
     
     /**
      * The output module repository (which must be publishable). 
@@ -40,7 +41,7 @@ public class CeylondMojo extends AbstractMojo {
      *
      * @parameter expression="${ceylonc.out}" default-value="${project.build.directory}/ceylondoc"
      */
-    private File out;
+    private String out;
     
     /**
      * A source directory. 
@@ -82,19 +83,31 @@ public class CeylondMojo extends AbstractMojo {
      * 
      * @parameter expression="${ceylonc.repositories}"
      */
-    private String[] repositories;
+    private ArrayList<String> repositories;
     
     /**
      * The modules to compile (without versions).
      * 
      * @parameter expression="${ceylonc.modules}"
      */
-    private String[] modules;
+    private ArrayList<String> modules;
     
     public void execute() throws MojoExecutionException
     {
+        CommandLine args = buildOptions();        
+        
+        try {
+            Main.main(args.toArray());
+        } catch (IOException e) {
+            throw new MojoExecutionException("Something went wrong", e);
+        }
+    }
+
+    private CommandLine buildOptions() throws MojoExecutionException {
+        getLog().debug("Command line options to ceylond:");
+        
         CommandLine args = new CommandLine(this);
-        args.addOption("-out", out.getPath());
+        args.addOption("-out", resolveRepo(out));
         
         args.addOption("-src", src.getPath());
         
@@ -113,23 +126,21 @@ public class CeylondMojo extends AbstractMojo {
         if (repositories != null) {
             for (String rep : repositories) {
                 args.addOption("-rep");
-                args.addOption(rep);
+                args.addOption(resolveRepo(rep));
             }
         }
         
         if (modules != null 
-                && modules.length != 0) {
+                && modules.size() != 0) {
             for (String module : modules) {
                 args.addOption(module);
             }
         } else {
             getLog().error("No modules to compile. Specify these using 'ceylonc.modules'");
-        }        
-        
-        try {
-            Main.main(args.toArray());
-        } catch (IOException e) {
-            throw new MojoExecutionException("Something went wrong", e);
         }
+        
+        getLog().debug("End of command line options to ceylond");
+        
+        return args;
     }
 }
