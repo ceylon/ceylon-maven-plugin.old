@@ -20,17 +20,66 @@
 package com.redhat.ceylon.maven;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 
-import com.redhat.ceylon.compiler.java.Main;
+import com.redhat.ceylon.compiler.java.launcher.Main;
 
 /**
  * Compiles Ceylon and Java source code using the ceylonc compiler
  * @goal ceylonc
  */
 public class CeyloncMojo extends AbstractMojo {
+    
+
+    /**
+     * Used to pipe the compiler output to the maven log
+     */
+    class LoggingWriter extends Writer {
+
+        private StringBuilder currentLine = new StringBuilder();
+        
+        @Override
+        public void write(char[] cbuf, int off, int len) throws IOException {
+            for (int ii = off; ii < off + len; ii++) {
+                char c = cbuf[ii];
+                if (c == '\n'
+                        || c == '\r') {
+                    getLog().debug(currentLine);
+                    currentLine.setLength(0);
+                    if (ii + 1 < off + len) {
+                        char next = cbuf[ii + 1];
+                        if ((next == '\n'
+                                || c == '\r'
+                                && next != c)) {
+                            ii++;
+                        }
+                    }
+                } else {
+                    currentLine.append(c);
+                }
+            }
+        }
+
+        @Override
+        public void flush() throws IOException {
+            // Do nothing
+        }
+
+        @Override
+        public void close() throws IOException {
+            getLog().debug(currentLine);
+            currentLine.setLength(0);
+            currentLine.trimToSize();
+        }
+     
+    }
+
     
     /**
      * The directory in which to create the output <code>.car</code> file. 
@@ -57,6 +106,14 @@ public class CeyloncMojo extends AbstractMojo {
     private boolean disableDefaultRepos = false;
     
     /**
+     * If <code>true</code>, the compiler generates verbose output
+     * Equivalent to the <code>ceylonc</code>'s <code>-verbose</code> option.
+     * 
+     * @parameter expression="${ceylonc.verbose}" default="false"
+     */
+    private boolean verbose = false;
+
+    /**
      * The module repositories containing dependencies.
      * Equivalent to the <code>ceylonc</code>'s <code>-rep</code> option.
      * 
@@ -71,15 +128,20 @@ public class CeyloncMojo extends AbstractMojo {
      */
     private String[] modules;
     
-    public void execute() throws MojoExecutionException
+    public void execute() throws MojoExecutionException, MojoFailureException
     {
         CommandLine args = new CommandLine(this);
         args.addOption("-out", out.getPath());
+        out.mkdirs();
         
         args.addOption("-src", src.getPath());
         
         if (disableDefaultRepos) {
             args.addOption("-d");
+        }
+        
+        if (verbose) {
+            args.addOption("-verbose");
         }
         
         if (repositories != null) {
@@ -94,12 +156,13 @@ public class CeyloncMojo extends AbstractMojo {
                 args.addOption(module);
             }
         } else {
-            getLog().error("No modules to compile. Specify these using 'ceylonc.modules'");
+            throw new MojoExecutionException("No modules to compile. Specify these using 'ceylonc.modules'");
+                    
         }        
         
-        int sc = Main.compile(args.toArray());
+        int sc = new Main("ceylonc", new PrintWriter(new LoggingWriter())).compile(args.toArray());
         if (sc != 0) {
-            throw new MojoExecutionException("There were compiler errors");
+            throw new MojoFailureException("There were compiler errors");
         }
     }
 }

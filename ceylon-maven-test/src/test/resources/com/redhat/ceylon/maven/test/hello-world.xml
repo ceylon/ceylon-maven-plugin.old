@@ -23,6 +23,7 @@
         <configuration>
           <src>source</src>
           <out>../../../../../../../../target/maven-plugin-test</out>
+          <verbose>false</verbose>
           <modules>
             <param>com.acme.helloworld</param>
           </modules>
